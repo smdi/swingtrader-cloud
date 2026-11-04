@@ -1,0 +1,62 @@
+name: Evening update
+
+# SwingTrader's evening update (paper trading only - no broker, no orders): NSE's daily
+# file, corporate actions, the 25% stop, red-flag announcements, the month-end decision
+# traded at the next official open, the experiments. The page and its data live on the
+# `data` branch, which keeps only its latest copy (one commit, replaced each evening).
+
+on:
+  schedule:
+    - cron: "0 14 * * 1-5"     # 19:30 IST, Monday to Friday (GitHub's clock is UTC)
+    - cron: "45 16 * * 1-5"    # 22:15 IST: picks up NSE's file when it came out late
+  workflow_dispatch:            # the "Run workflow" button
+
+permissions:
+  contents: write
+
+concurrency:
+  group: evening
+  cancel-in-progress: false
+
+jobs:
+  evening:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: app
+      - uses: actions/checkout@v4
+        with:
+          ref: data
+          path: site
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: app/code/cloud/requirements.txt
+      - run: "pip install --only-binary=:all: -r app/code/cloud/requirements.txt"
+      - name: Evening update
+        id: run
+        working-directory: app/code
+        run: |
+          set +e
+          python -W ignore -m cloud.run --data "$GITHUB_WORKSPACE/site" --in-place
+          echo "code=$?" >> "$GITHUB_OUTPUT"
+      - name: Save the page and its data
+        working-directory: site
+        run: |
+          rm -f publish.json
+          cp "$GITHUB_WORKSPACE/app/page/index.html" index.html   # the page itself lives on main
+          touch .nojekyll                                          # GitHub Pages: serve the files as they are
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -q --orphan next
+          git add -A
+          git commit -q -m "Evening update $(TZ=Asia/Kolkata date '+%Y-%m-%d %H:%M') IST"
+          git push -q -f origin next:data
+      - name: Report a failed update
+        if: steps.run.outputs.code != '0'
+        run: |
+          echo "::error::The evening update failed; the page shows the error. See the 'Evening update' step."
+          exit 1
