@@ -3,12 +3,15 @@ name: Evening update
 # SwingTrader's evening update (paper trading only - no broker, no orders): NSE's daily
 # file, corporate actions, the 25% stop, red-flag announcements, the month-end decision
 # traded at the next official open, the experiments. The page and its data live on the
-# `data` branch, which keeps only its latest copy (one commit, replaced each evening).
+# `data` branch, which keeps only its latest copy (one commit, replaced each run).
 
 on:
   schedule:
-    - cron: "0 14 * * 1-5"     # 19:30 IST, Monday to Friday (GitHub's clock is UTC)
-    - cron: "45 16 * * 1-5"    # 22:15 IST: picks up NSE's file when it came out late
+    # GitHub's clock is UTC. Odd minutes on purpose: runs set on the hour are often delayed
+    # or dropped when GitHub is busy (5 Nov 2026: the 14:00 UTC run never started).
+    - cron: "7 14 * * 1-5"     # 19:37 IST, Monday to Friday
+    - cron: "53 16 * * 1-5"    # 22:23 IST: picks up NSE's file when it came out late
+    - cron: "41 0 * * 2-6"     # 06:11 IST the next morning: catches up an evening GitHub skipped
   workflow_dispatch:            # the "Run workflow" button
 
 permissions:
