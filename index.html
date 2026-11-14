@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>SwingTrader</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a ledger-like trading notebook - one top bar of tabs, cards of tables below, figures in a mono face. */
+:root {
+  --bg: #f4f5f2; --panel: #ffffff; --fg: #1b1f1d; --muted: #5d6662; --line: #dde1dc; --soft: #eef0ec;
+  --accent: #1f5e7a; --accent-soft: #e3eef3;
+  --up: #11734a; --down: #b3261e; --warn: #8a5a00; --warn-soft: #fbf1dc; --bad-soft: #fbe7e5; --good-soft: #e2f3ea;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-num: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1312; --panel: #161b1a; --fg: #e5e9e6; --muted: #98a39e; --line: #27302d; --soft: #1c2321;
+  --accent: #6fb6d3; --accent-soft: #17303a;
+  --up: #45c98a; --down: #ff7b72; --warn: #e3b341; --warn-soft: #2e2614; --bad-soft: #3a1d1b; --good-soft: #15301f;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1312; --panel: #161b1a; --fg: #e5e9e6; --muted: #98a39e; --line: #27302d; --soft: #1c2321;
+  --accent: #6fb6d3; --accent-soft: #17303a;
+  --up: #45c98a; --down: #ff7b72; --warn: #e3b341; --warn-soft: #2e2614; --bad-soft: #3a1d1b; --good-soft: #15301f;
+  color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 14px; line-height: 1.45 }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--panel) }
+a { color: var(--accent) }
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--panel); border-bottom: 1px solid var(--line);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+.bar-in { max-width: 1240px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 18px; padding-block: 8px }
+.brand { font-weight: 600; letter-spacing: .01em; display: flex; align-items: baseline; gap: 6px }
+.brand small { color: var(--muted); font-weight: 400; font-size: 12px }
+nav { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; max-width: 100% }
+nav a { text-decoration: none; color: var(--muted); padding: 6px 10px; border-radius: 7px; white-space: nowrap; font-weight: 500 }
+nav a[aria-current="page"] { color: var(--fg); background: var(--soft) }
+nav a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+.status { margin-left: auto; font-size: 12px; color: var(--muted) }
+main { max-width: 1240px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 18px 40px }
+h1 { font-size: 20px; margin: 0; font-weight: 600; text-wrap: balance }
+h2 { font-size: 15px; margin: 0 0 8px; font-weight: 600 }
+.sub { color: var(--muted); font-size: 13px; max-width: 75ch }
+.muted { color: var(--muted) }
+.small { font-size: 12.5px }
+.stack { display: flex; flex-direction: column; gap: 14px }
+.grid { display: grid; gap: 14px }
+.kpis { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) }
+@media (max-width: 520px) { .kpis { grid-template-columns: 1fr 1fr } .kpi .value { font-size: 18px }
+  nav a { padding: 6px 7px; font-size: 13.5px } .status { margin-left: 0 } }
+.two { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr) }
+@media (max-width: 860px) { .two { grid-template-columns: minmax(0, 1fr) } }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; min-width: 0 }
+.kpi .label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted) }
+.kpi .value { font-family: var(--font-num); font-size: 22px; font-weight: 500; font-variant-numeric: tabular-nums; margin-top: 2px }
+.kpi .note { font-size: 12px; color: var(--muted) }
+.head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 10px }
+.up { color: var(--up) } .down { color: var(--down) }
+.num { text-align: right; font-family: var(--font-num); font-variant-numeric: tabular-nums; white-space: nowrap }
+.scroll { overflow-x: auto; -webkit-overflow-scrolling: touch }
+table { border-collapse: collapse; width: 100% }
+th { text-align: left; font-weight: 500; font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap }
+th.num { text-align: right }
+td { padding: 6px 8px; border-bottom: 1px solid var(--soft); vertical-align: top }
+tr:last-child td { border-bottom: 0 }
+tr.held td { background: var(--accent-soft) }
+tr.flag td { background: var(--bad-soft) }
+.sym { font-weight: 600; text-decoration: none }
+.sym:hover { text-decoration: underline }
+button.sym { background: none; border: 0; padding: 0; font: inherit; font-weight: 600; color: var(--accent); cursor: pointer }
+.chip { display: inline-block; font-size: 11.5px; padding: 1px 7px; border-radius: 99px; border: 1px solid var(--line); background: var(--soft); color: var(--fg); white-space: nowrap; margin: 1px 2px 1px 0 }
+.chip.buy, .chip.good { background: var(--good-soft); border-color: transparent; color: var(--up) }
+.chip.sell, .chip.bad, .chip.danger { background: var(--bad-soft); border-color: transparent; color: var(--down) }
+.chip.warn { background: var(--warn-soft); border-color: transparent; color: var(--warn) }
+.chip.held { background: var(--accent-soft); border-color: transparent; color: var(--accent) }
+.risk .chip { display: block; white-space: normal; margin-bottom: 3px; width: fit-content; max-width: 22rem }
+.alert { border-radius: var(--r); padding: 10px 12px; font-size: 13px; border: 1px solid transparent }
+.alert.bad { background: var(--bad-soft); color: var(--fg); border-color: color-mix(in srgb, var(--down) 30%, transparent) }
+.alert.info { background: var(--soft); border-color: var(--line) }
+.alert.warn { background: var(--warn-soft); border-color: color-mix(in srgb, var(--warn) 30%, transparent) }
+.chart { position: relative; height: 300px }
+.chart.tall { height: 340px }
+input[type="search"] { font: inherit; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--fg); width: 220px; max-width: 100% }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--muted); align-items: center }
+details summary { cursor: pointer; color: var(--muted); font-size: 13px; padding: 6px 0 }
+ul.how { margin: 0; padding-left: 18px; font-size: 13px; display: flex; flex-direction: column; gap: 4px }
+.runs button { background: none; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; color: var(--fg); font: inherit; cursor: pointer; text-align: left; width: 100% }
+.runs button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft) }
+.empty { padding: 22px; text-align: center; color: var(--muted) }
+.hide-sm { } @media (max-width: 700px) { .hide-sm { display: none } }
+.mono { font-family: var(--font-num) }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important } }
+</style>
+
+<header class="bar"><div class="bar-in">
+  <div class="brand">SwingTrader <small>paper portfolio · NSE</small></div>
+  <nav id="tabs" aria-label="Pages">
+    <a href="#today">Today</a><a href="#stocks">Stocks</a><a href="#portfolio">Portfolio</a><a href="#experiments">Experiments</a><a href="#research">Research</a>
+  </nav>
+  <div class="status" id="status">Loading…</div>
+</div></header>
+<main id="main" tabindex="-1"><div class="empty">Loading the latest evening update…</div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<script>
+"use strict";
+// ---------------------------------------------------------------- helpers
+const $main = document.getElementById("main");
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k === "class") el.className = v;
+    else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else el.setAttribute(k, v === true ? "" : v);
+  }
+  for (const k of kids.flat(Infinity)) if (k != null && k !== false) el.append(k instanceof Node ? k : String(k));
+  return el;
+}
+const fmt = (v, d) => Math.abs(v).toLocaleString("en-IN", {minimumFractionDigits: d, maximumFractionDigits: d});
+function inr(v, d = 0, sign = false) {
+  if (v == null || !isFinite(v)) return "–";
+  const r = +(+v).toFixed(d);
+  return (r < 0 ? "-" : (sign && r > 0 ? "+" : "")) + "₹" + fmt(r, d);
+}
+function pct(v, d = 1, sign = true) {
+  if (v == null || !isFinite(v)) return "–";
+  const r = +(+v).toFixed(d);
+  return (sign && r > 0 ? "+" : r < 0 ? "-" : "") + Math.abs(r).toFixed(d) + "%";
+}
+// colour only changes (moves, gains), never levels (price, value); judged at the digits shown
+const tone = (v, d = 1) => v == null || !isFinite(v) ? "" : (+(+v).toFixed(d) > 0 ? "up" : +(+v).toFixed(d) < 0 ? "down" : "");
+const num = (v, d = 2) => v == null || !isFinite(v) ? "–" : (+v).toFixed(d);
+const day = s => {
+  if (!s) return "–";
+  const d = new Date(String(s).slice(0, 10) + "T00:00:00");
+  return isNaN(d) ? String(s) : d.toLocaleDateString("en-IN", {day: "numeric", month: "short", year: "numeric"});
+};
+const td = (v, cls) => h("td", {class: cls}, v);
+const card = (...kids) => h("section", {class: "card"}, kids);
+const empty = text => h("div", {class: "empty"}, text);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+// ---------------------------------------------------------------- data
+const cache = {};
+async function load(name) {
+  if (!cache[name]) cache[name] = fetch(`data/view/${name}.json`, {cache: "no-store"}).then(r => {
+    if (!r.ok) throw new Error(`${name}: ${r.status}`);
+    return r.json();
+  });
+  return cache[name];
+}
+let details = null;
+const slug = s => "stock-" + s.replace(/[^A-Za-z0-9]/g, c => "-" + c.charCodeAt(0).toString(16));
+const unslug = s => s.slice(6).replace(/-([0-9a-f]{2})/g, (_, x) => String.fromCharCode(parseInt(x, 16)));
+function symLink(s) {
+  return details && details[s] ? h("a", {class: "sym", href: "#" + slug(s)}, s) : h("span", {class: "sym"}, s);
+}
+
+// ---------------------------------------------------------------- charts
+let charts = [];
+function lineChart(canvas, labels, sets, {log = false} = {}) {
+  if (!window.Chart) { canvas.replaceWith(h("p", {class: "muted small"}, "The chart library did not load.")); return; }
+  const fg = css("--muted"), grid = css("--line");
+  charts.push(new Chart(canvas, {
+    type: "line",
+    data: {labels, datasets: sets.map(s => ({pointRadius: 0, borderWidth: 2, spanGaps: true, tension: 0, ...s}))},
+    options: {maintainAspectRatio: false, animation: false, interaction: {mode: "index", intersect: false},
+      plugins: {legend: {labels: {color: fg, boxWidth: 12, font: {family: css("--font-body")}}},
+                tooltip: {callbacks: {label: c => `${c.dataset.label}: ${c.parsed.y == null ? "–" : c.parsed.y.toFixed(1)}`}}},
+      scales: {x: {ticks: {color: fg, maxTicksLimit: 8, maxRotation: 0}, grid: {color: grid}},
+               y: {type: log ? "logarithmic" : "linear", ticks: {color: fg}, grid: {color: grid}}}}
+  }));
+}
+const norm = (rows, k) => { const b = (rows.find(r => r[k]) || {})[k]; return rows.map(r => r[k] && b ? r[k] / b * 100 : null); };
+
+// ---------------------------------------------------------------- Today
+async function today() {
+  const d = await load("today");
+  const b = d.book;
+  if (!b) return [card(h("h2", {}, "The paper portfolio has not started yet"),
+    h("p", {class: "muted"}, "It starts on the first evening update after NSE's daily file is in."))];
+  const last = d.last;
+  const out = [];
+  out.push(h("div", {class: "kpis"},
+    h("div", {class: "card kpi"}, h("div", {class: "label"}, "Portfolio value"),
+      h("div", {class: "value"}, inr(last ? last.value : b.capital)),
+      last && h("div", {class: "note"}, `at the close of ${day(last.date)}`),
+      h("div", {class: "note"}, `started ${day(b.started_on)} with ${inr(b.capital)}`)),
+    h("div", {class: "card kpi"}, h("div", {class: "label"}, "Since start"),
+      h("div", {class: "value " + tone(d.return_pct)}, pct(d.return_pct)),
+      h("div", {class: "note"}, "NIFTY 50 ", h("span", {class: tone(d.nifty_pct)}, pct(d.nifty_pct)),
+        " · all screened ", h("span", {class: tone(d.all_screened_pct)}, pct(d.all_screened_pct)))),
+    h("div", {class: "card kpi"}, h("div", {class: "label"}, "Holdings"),
+      h("div", {class: "value"}, `${last ? last.holdings : 0} of ${b.rules.holdings}`),
+      h("div", {class: "note"}, `cash ${inr(last ? last.cash : b.capital)}`)),
+    h("div", {class: "card kpi"}, h("div", {class: "label"}, "Next decision"),
+      h("div", {class: "value"}, day(d.next_decision)),
+      h("div", {class: "note"}, `after the close; trades at the open on ${day(d.next_trades)}`))));
+  const chartBox = h("div", {class: "chart"}, h("canvas", {"aria-label": "Portfolio, NIFTY 50 and all screened stocks since the start"}));
+  const pending = d.pending;
+  out.push(h("div", {class: "grid two"},
+    card(h("h2", {}, `Value since start (each = 100 on ${day(b.started_on)})`),
+      d.values.length > 1 ? chartBox : h("p", {class: "muted"}, "The chart appears after the second evening.")),
+    h("div", {class: "stack"},
+      card(h("h2", {}, "Waiting for the next open"),
+        pending ? [h("p", {class: "small muted"}, `Decided at the close on ${day(pending.decided_on)}.`),
+          h("div", {}, h("span", {class: "chip sell"}, "Sell"), " ", pending.sells.length ? pending.sells.map(s => [symLink(s), " "]) : h("span", {class: "muted"}, "nothing")),
+          h("div", {style: "margin-top:6px"}, h("span", {class: "chip buy"}, "Buy"), " ", pending.buys.length ? pending.buys.map(s => [symLink(s), " "]) : h("span", {class: "muted"}, "nothing")),
+          h("p", {class: "small muted"}, `Buys go in equal parts of the portfolio, best first, until ${b.rules.holdings} are held.`)]
+          : h("p", {class: "muted"}, "Nothing. The book holds its stocks until the next month-end decision."),
+        d.orders.length ? [h("h2", {style: "margin-top:10px"}, "Sell orders"),
+          d.orders.map(o => h("div", {class: "small"}, `${o.symbol} at the official ${o.at} on ${day(o.day)} (${o.why})`))] : null),
+      card(h("h2", {}, "How it works"), h("ul", {class: "how"},
+        h("li", {}, "Every weekday evening NSE's official file updates prices and the list of tradeable stocks (the screen)."),
+        h("li", {}, b.rules.lookback === "nse"
+          ? "On the last trading day of each month the stocks are ranked the NSE way: the 6- and 12-month rise divided by how much the stock swings, so a steady riser beats a jumpy one."
+          : "On the last trading day of each month the stocks are ranked by their 6-month rise."),
+        h("li", {}, `At the next open: sell holdings that fell below rank ${b.rules.keep_rank}, buy the best ranked until ${b.rules.holdings} are held. The trades are made at NSE's official opening price and recorded by that evening's update.`),
+        b.rules.stop_loss ? h("li", {}, `Between decisions, a holding that closes ${Math.round(b.rules.stop_loss * 100)}% or more below its buy price is sold at the next open, and a red-flag company announcement (auditor resigning, default, fraud, regulator action, ...) sells it too.`) : null,
+        b.rules.sector_cap ? h("li", {}, `At most ${b.rules.sector_cap} stocks from one sector.`) : null,
+        h("li", {}, "Tested 2010–2026 after all charges: see ", h("a", {href: "#research"}, "Research"), "."))))));
+  const names = {daily_data: "Data", paper_book: "Portfolio", experiments: "Experiments", morning_fill: "Morning fill", stop_live: "Stop", backtest: "Backtest"};
+  out.push(card(h("h2", {}, "Last updates"), h("div", {class: "scroll"}, h("table", {class: "small"},
+    h("thead", {}, h("tr", {}, h("th", {}, "Finished"), h("th", {}, "Job"), h("th", {}, "For"), h("th", {}, "Result"))),
+    h("tbody", {}, d.last_jobs.length ? d.last_jobs.map(j => h("tr", {},
+      td(j.finished_at, "muted mono"), td(names[j.job] || j.job), td(j.detail.day || j.detail.for || ""),
+      td([h("span", {class: "chip " + (["ok", "closed"].includes(j.status) ? "good" : ["backup", "incomplete"].includes(j.status) ? "warn" : "bad")}, j.status),
+          j.detail.error ? h("span", {class: "small muted"}, " " + String(j.detail.error).slice(0, 120)) : null])))
+      : h("tr", {}, td("No updates yet.", "muted")))))));
+  return [out, () => {
+    if (d.values.length > 1) lineChart(chartBox.firstChild, d.values.map(r => r.date), [
+      {label: "Portfolio", data: norm(d.values, "value"), borderColor: css("--up")},
+      {label: "NIFTY 50", data: norm(d.values, "nifty"), borderColor: css("--accent"), borderWidth: 1.5},
+      {label: "All screened", data: norm(d.values, "all_screened"), borderColor: css("--muted"), borderWidth: 1, borderDash: [4, 3]}]);
+  }];
+}
+
+// ---------------------------------------------------------------- Stocks
+async function stocks() {
+  const d = await load("stocks");
+  const r = d.rules || {};
+  const rows = d.rows || [];
+  const zone = x => x.held && x.status === "below keep zone" ? h("span", {class: "chip sell"}, "sell")
+    : x.status === "sector full" ? h("span", {class: "chip warn", title: `the portfolio already holds ${r.sector_cap} stocks from this sector`}, "sector full")
+    : x.status === "buy zone" ? h("span", {class: "chip buy"}, "buy zone")
+    : x.status === "keep zone" ? h("span", {class: "chip"}, "keep zone") : "";
+  const body = h("tbody", {}, rows.length ? rows.map(x => {
+    const tr = h("tr", {class: x.held ? "held" : null, "data-q": `${x.symbol} ${x.name || ""}`.toLowerCase()},
+      td(x.rank || "–", "num"),
+      td([symLink(x.symbol), " ", h("span", {class: "small muted hide-sm"}, x.name || "")]),
+      td(inr(x.close, 2), "num"),
+      r.lookback === "nse" ? td(x.score == null ? "–" : num(x.score), "num") : null,
+      td(pct(x.ret_6m), "num " + tone(x.ret_6m)),
+      td(pct(x.ret_1m), "num hide-sm " + tone(x.ret_1m)),
+      td(x.sector || "", "small muted hide-sm"),
+      td([zone(x), x.held && !x.on_screen ? h("span", {class: "small muted"}, " off the screen") : null]),
+      td(x.held ? h("span", {class: "chip held"}, "held") : ""));
+    tr.hidden = !!(x.rank && x.rank > 100 && !x.held);
+    tr.dataset.tail = tr.hidden ? "1" : "";
+    return tr;
+  }) : h("tr", {}, h("td", {colspan: 9, class: "muted"}, "No screen yet: it is made by the evening update.")));
+  const search = h("input", {type: "search", id: "find", placeholder: "Find a stock…", "aria-label": "Find a stock",
+    oninput: e => { const v = e.target.value.trim().toLowerCase();
+      body.querySelectorAll("tr[data-q]").forEach(tr => tr.hidden = v ? !tr.dataset.q.includes(v) : tr.dataset.tail === "1"); }});
+  return [[
+    h("div", {class: "head"}, h("div", {},
+      h("h1", {}, "Strongest stocks"),
+      h("p", {class: "sub"}, `${d.screened} stocks pass the screen on ${day(d.day)} (liquid, price ≥ ₹20, steady trading, listed a year), ranked `,
+        r.lookback === "nse" ? "by the NSE-style score: the 6- and 12-month rise divided by how much the stock swings, compared with every screened stock (0 = average, 2 = far above). " : "by their 6-month rise. ",
+        "This is the ranking the monthly decision uses; the 1-month column is for information only.")), search),
+    h("div", {class: "legend"},
+      h("span", {}, h("span", {class: "chip buy"}, "buy zone"), ` top ${r.holdings}: bought at a month end when a place is free`),
+      h("span", {}, h("span", {class: "chip"}, "keep zone"), ` to rank ${r.keep_rank}: a holding here is kept`),
+      h("span", {}, h("span", {class: "chip sell"}, "sell"), ` a holding below rank ${r.keep_rank} is sold at the next month end`),
+      r.sector_cap ? h("span", {}, h("span", {class: "chip warn"}, "sector full"), ` at most ${r.sector_cap} holdings per sector`) : null),
+    card(h("div", {class: "scroll"}, h("table", {},
+      h("thead", {}, h("tr", {}, h("th", {class: "num"}, "Rank"), h("th", {}, "Stock"), h("th", {class: "num"}, "Close"),
+        r.lookback === "nse" ? h("th", {class: "num"}, "Score") : null, h("th", {class: "num"}, "6 months"),
+        h("th", {class: "num hide-sm"}, "1 month"), h("th", {class: "hide-sm"}, "Sector"), h("th", {}, "Zone"), h("th", {}, h("span", {class: "muted"}, "")))),
+      body))),
+    h("p", {class: "small muted"}, "Showing the top 100 and every holding; type in the box to find any screened stock. Tap a stock for its chart and news.")]];
+}
+
+// ---------------------------------------------------------------- Portfolio
+async function portfolio() {
+  const P = await load("portfolio");
+  const d = P.d, A = P.alerts, rules = (P.book || {}).rules || {};
+  const flag = a => a.startsWith("stop hit") ? "danger" : a.startsWith("down") ? "warn" : "";
+  const m = A.market || {};
+  const out = [];
+  out.push(h("div", {class: "head"},
+    h("div", {}, h("h1", {}, "Portfolio"), h("p", {class: "sub"}, `Prices: the last close (${day(d.positions[0] && d.positions[0].close_day)}), updated each weekday evening from NSE's file.`)),
+    h("div", {class: "kpis", style: "flex: 1 1 520px; min-width: 0; max-width: 860px"},
+      h("div", {class: "kpi"}, h("div", {class: "label"}, "Value"), h("div", {class: "value"}, inr(d.value))),
+      h("div", {class: "kpi"}, h("div", {class: "label"}, d.day_label), h("div", {class: "value " + tone(d.day_pct, 2)}, `${inr(d.day_change, 0, true)} (${pct(d.day_pct, 2)})`)),
+      h("div", {class: "kpi"}, h("div", {class: "label"}, "Gain since bought"), h("div", {class: "value " + tone(d.gain_pct)}, `${inr(d.gain, 0, true)} (${pct(d.gain_pct)})`)),
+      h("div", {class: "kpi"}, h("div", {class: "label"}, "Invested"), h("div", {class: "value"}, inr(d.invested))),
+      h("div", {class: "kpi"}, h("div", {class: "label"}, "Cash"), h("div", {class: "value"}, inr(d.cash)),
+        d.cash < -0.5 ? h("div", {class: "note"}, "owed: a split or bonus NSE listed after a sale; paid back from the next sale, no buys until then") : null))));
+  if (m.falling) out.push(h("div", {class: "alert bad"}, h("b", {}, "Market falling: "),
+    `NIFTY 50 (${Math.round(m.nifty || 0)}) is below its 200-day average (${Math.round(m.average_200 || 0)}). In past falls like 2018 the strategy lost heavily. The market filter was tested and not adopted (it cost more than it saved); the 25% stop and red-flag news still sell automatically.`));
+  out.push(card(h("div", {class: "scroll"}, h("table", {},
+    h("thead", {}, h("tr", {}, h("th", {}, "Stock"), h("th", {class: "num hide-sm"}, "Shares"), h("th", {class: "num hide-sm"}, "Cost"), h("th", {class: "num"}, "Price"),
+      h("th", {class: "num"}, d.day_label), h("th", {class: "num"}, "Value"), h("th", {class: "num"}, "Gain"), h("th", {class: "num hide-sm"}, "Weight"),
+      h("th", {class: "hide-sm"}, "Since"), h("th", {}, "Risk"))),
+    h("tbody", {}, d.positions.length ? d.positions.map(p => h("tr", {},
+      td([symLink(p.symbol), " ", h("span", {class: "small muted hide-sm"}, p.name || "")]),
+      td(num(p.shares), "num hide-sm"), td(inr(p.cost), "num hide-sm"), td(inr(p.price, 2), "num"),
+      td(pct(p.day_pct), "num " + tone(p.day_pct)), td(inr(p.value), "num"),
+      td(`${inr(p.pnl, 0, true)} (${pct(p.pnl_pct)})`, "num " + tone(p.pnl_pct)),
+      td(pct(p.weight_pct, 1, false), "num hide-sm"), td(day(p.opened_on), "small hide-sm"),
+      td((A.holdings[p.symbol] || []).map(a => h("span", {class: "chip " + flag(a)}, a)), "small risk")))
+      : h("tr", {}, h("td", {colspan: 10, class: "muted"}, "No holdings yet. Buys happen at the open after a month-end decision (see Today).")))))));
+  const stop = Math.round((rules.stop_loss || 0) * 100), keep = rules.keep_rank || 40;
+  out.push(h("p", {class: "small muted"}, h("b", {}, "Risk"), " column: what the rules will do - ",
+    stop ? `a holding down 15% or more shows the price at which the ${stop}% stop sells it; ` : "",
+    `a holding below rank ${keep} is sold at the month-end decision if it is still below ${keep} then. `,
+    h("b", {}, "Sold automatically"), `: ${stop ? `a close ${stop}% or more below the buy price (sold at the next open), or ` : ""}a red-flag company announcement. On a phone, shares, cost, weight and the buy date are hidden.`));
+  if (P.orders.length) out.push(card(h("h2", {}, "Waiting sell orders"), h("div", {class: "scroll"}, h("table", {class: "small"}, h("tbody", {},
+    P.orders.map(o => h("tr", {}, td(o.symbol), td(`at the official ${o.at} on ${day(o.day)}`),
+      td([h("span", {class: "chip " + (o.reason === "manual" ? "" : "bad")}, o.why), " ", (o.info || {}).flag || "", (o.info || {}).text || "",
+        (o.info || {}).link ? [" ", h("a", {href: o.info.link, target: "_blank", rel: "noopener"}, "filing")] : null]),
+      td(`placed ${o.created_at}`, "muted"))))))));
+  out.push(card(h("h2", {}, "Company announcements (NSE, last 7 days, your holdings)"),
+    h("p", {class: "small muted"}, "Read every evening. A red flag (auditor or top manager resigning, a missed payment, fraud or forensic audit, a regulator's order, insolvency, a rating downgrade, pledged shares sold, trading suspended) sells the stock automatically at the next open. It is not bought back for a month."),
+    h("div", {class: "scroll"}, h("table", {class: "small"}, h("tbody", {}, P.news.length ? P.news.map(n => h("tr", {class: n.flag ? "flag" : null},
+      td(String(n.at).slice(0, 16), "mono muted"), td(symLink(n.symbol)),
+      td([n.flag ? [h("span", {class: "chip bad"}, n.flag), " "] : null, h("b", {}, n.subject), " ", h("span", {class: "muted"}, (n.text || "").slice(0, 220)),
+        n.link ? [" ", h("a", {href: n.link, target: "_blank", rel: "noopener"}, "filing")] : null])))
+      : h("tr", {}, td("No announcements for your holdings in the last 7 days (or not read yet).", "muted")))))));
+  out.push(card(h("h2", {}, "In the news (Google News, last 7 days)"),
+    h("p", {class: "small muted"}, `Headlines from Indian media about each stock you hold${P.media_at ? ` (last read ${String(P.media_at).slice(0, 16)})` : ""}. `,
+      h("span", {class: "chip good"}, "good"), h("span", {class: "chip bad"}, "bad"), h("span", {class: "chip"}, "neutral"),
+      " is read from the words in the headline - a quick guide, not a judgement. For your information only: it never buys or sells."),
+    P.media.length ? P.media.map(g => h("div", {style: "margin-bottom:10px"},
+      h("div", {}, symLink(g.symbol), h("span", {class: "small muted"}, ` ${g.total} headline${g.total === 1 ? "" : "s"}: `),
+        h("span", {class: "chip good"}, `${g.count.good} good`), h("span", {class: "chip bad"}, `${g.count.bad} bad`), h("span", {class: "chip"}, `${g.count.neutral} neutral`)),
+      h("div", {class: "scroll"}, h("table", {class: "small"}, h("tbody", {}, g.rows.map(n => h("tr", {},
+        td(String(n.at).slice(0, 16), "mono muted"),
+        td(h("span", {class: "chip " + ({good: "good", bad: "bad"}[n.sentiment] || "")}, n.sentiment)),
+        td([n.link ? h("a", {href: n.link, target: "_blank", rel: "noopener"}, n.title) : n.title,
+          h("span", {class: "muted"}, ` - ${n.source || ""}${n.words ? " · " + n.words : ""}`)]))))))))
+      : h("p", {class: "small muted"}, "No headlines yet.")));
+  if (P.rule_sales.length) out.push(card(h("h2", {}, "Sales made by a rule"), h("div", {class: "scroll"}, h("table", {class: "small"}, h("tbody", {},
+    P.rule_sales.map(o => h("tr", {}, td(o.symbol),
+      td([h("span", {class: "chip bad"}, o.why), " ", (o.info || {}).flag || "", (o.info || {}).text || "",
+        (o.info || {}).subject ? h("span", {class: "muted"}, ` - ${o.info.subject}`) : null,
+        (o.info || {}).link ? [" ", h("a", {href: o.info.link, target: "_blank", rel: "noopener"}, "filing")] : null]),
+      td(`${o.status}${o.done_on ? " " + day(o.done_on) : ""} ${o.at === "live" ? "at Kite's live price" : "at the official " + o.at}`))))))));
+  out.push(card(h("h2", {}, "Trades"), h("div", {class: "scroll"}, h("table", {class: "small"},
+    h("thead", {}, h("tr", {}, ["Date", "Stock", "Side"].map(x => h("th", {}, x)), ["Shares", "Price", "After slippage", "Amount", "Charges"].map(x => h("th", {class: "num"}, x)))),
+    h("tbody", {}, P.fills.length ? P.fills.map(f => h("tr", {},
+      td(day(f.date)), td(symLink(f.symbol)), td([h("span", {class: "chip " + (f.side === "BUY" ? "buy" : "sell")}, f.side), f.manual ? h("span", {class: "muted"}, " by hand") : null]),
+      td(num(f.shares), "num"), td([inr(f.price, 2), f.price_note ? h("div", {class: "muted", style: "font-size:.75em"}, f.price_note) : null], "num"),
+      td(inr(f.fill_price, 2), "num"), td(inr(f.value), "num"), td(inr(f.charges, 2), "num")))
+      : h("tr", {}, h("td", {colspan: 8, class: "muted"}, "No trades yet.")))))));
+  return [out];
+}
+
+// ---------------------------------------------------------------- Experiments
+async function experiments() {
+  const d = await load("experiments");
+  if (!d.start) return [[h("div", {class: "alert info"}, "The experiments start on the first evening update after NSE's file is in.")]];
+  const out = [];
+  out.push(h("div", {class: "head"}, h("div", {}, h("h1", {}, "Experiments"),
+    h("p", {class: "sub"}, `Pretend portfolios of ${inr(d.capital)} each, running other rules beside the real one. They never buy or sell anything in your portfolio.`)),
+    h("div", {class: "small muted"}, `Started ${day(d.start)} · updated for ${day(d.done_for)}`)));
+  if (d.note) out.push(h("div", {class: "alert warn"}, d.note));
+  const box = h("div", {class: "chart"}, h("canvas", {"aria-label": "Experiments compared, each 100 at the start"}));
+  out.push(card(h("div", {class: "small muted", style: "margin-bottom:6px"}, "Everything at 100 on the start day's close"), box));
+  out.push(card(h("div", {class: "scroll"}, h("table", {},
+    h("thead", {}, h("tr", {}, h("th", {}, "Portfolio"), h("th", {}, "Decides"), ["Value", "Return", "Worst fall", "Trades", "Charges", "Same stocks as real", "Backtest, first period", "Backtest, second period"].map(x => h("th", {class: "num"}, x)), h("th", {}, "Next decision"))),
+    h("tbody", {},
+      h("tr", {}, td(h("b", {}, "Your real portfolio")), td("month end", "small"), td(inr(d.real.value), "num"),
+        td(pct(d.real.return_pct), "num " + tone(d.real.return_pct)), td(pct(d.real.worst_fall, 1, false), "num " + tone(d.real.worst_fall)), h("td", {colspan: 6})),
+      d.items.map(e => { const b = e.backtest; return h("tr", {},
+        td(h("a", {href: "#experiments", onclick: ev => { ev.preventDefault(); document.getElementById("exp-" + e.key).scrollIntoView(); }, class: "sym"}, e.name)),
+        td(e.rebalance === "week_end" ? "every week" : "month end", "small"), td(inr(e.value), "num"),
+        td(pct(e.return_pct), "num " + tone(e.return_pct)), td(pct(e.worst_fall, 1, false), "num " + tone(e.worst_fall)),
+        td(e.trades, "num"), td(inr(e.charges), "num"), td(`${e.same_as_real} of ${e.real_count}`, "num"),
+        td(b ? [h("span", {class: "muted"}, (e.periods || [])[0] + ": "), h("span", {class: tone(b.a_ret)}, pct(b.a_ret)), "/yr · fall ", h("span", {class: tone(b.a_fall)}, pct(b.a_fall, 0, false))] : "", "num small"),
+        td(b ? [h("span", {class: "muted"}, ((e.periods || [])[1] || "2019–26") + ": "), h("span", {class: tone(b.b_ret)}, pct(b.b_ret)), "/yr · fall ", h("span", {class: tone(b.b_fall)}, pct(b.b_fall, 0, false))] : "", "num small"),
+        td(day(e.next_decision), "small")); }))))));
+  out.push(h("div", {class: "alert info small"}, h("b", {}, "How to read this. "),
+    `Each experiment starts with ${inr(d.capital)} on ${day(d.start)}, decides at that close and then by its own rules: bought and sold at the next official open; a close 25% below the buy price sells at the next open; all charges. Compare an experiment with Current rules (copy) - the live rules started on the same day - not with your real portfolio, which started earlier and also sells on bad news. `,
+    h("b", {}, "Judging rule, fixed in advance: "), "an experiment can replace the live rules only after at least 6-12 months, when it is no worse on both return and worst fall than the copy. A few months ahead or behind is mostly luck."));
+  for (const e of d.items) {
+    out.push(h("section", {class: "card", id: "exp-" + e.key},
+      h("div", {class: "head"}, h("div", {}, h("h2", {}, e.name), h("p", {class: "sub"}, e.about)),
+        h("div", {class: "kpis", style: "min-width: min(100%, 420px)"},
+          h("div", {class: "kpi"}, h("div", {class: "label"}, "Value"), h("div", {class: "value"}, inr(e.value))),
+          h("div", {class: "kpi"}, h("div", {class: "label"}, "Return"), h("div", {class: "value " + tone(e.return_pct)}, pct(e.return_pct))),
+          h("div", {class: "kpi"}, h("div", {class: "label"}, "Cash"), h("div", {class: "value"}, inr(e.cash))))),
+      e.planned.length ? h("p", {class: "small"}, h("b", {}, `Trades at the open of ${day(e.planned[0].trade_on)} `),
+        h("span", {class: "muted"}, `(decided at the close of ${day(e.planned[0].decided_on)}): `),
+        e.planned.map(p => h("span", {class: "chip " + (p.side === "BUY" ? "buy" : "sell")}, `${p.side.toLowerCase()} ${p.symbol}${p.reason === "stop" ? " (25% stop)" : ""}`))) : null,
+      h("p", {class: "small muted"}, "A holding is kept at each decision while it still ranks high enough (the keep rank), so \"Since\" can be an earlier month."),
+      h("div", {class: "scroll"}, h("table", {},
+        h("thead", {}, h("tr", {}, h("th", {}, "Stock"), ["Shares", "Bought at", "Last close", "Value", "Gain"].map(x => h("th", {class: "num"}, x)), h("th", {}, "Since"), h("th", {}, "In real portfolio"))),
+        h("tbody", {}, e.positions.length ? e.positions.map(p => h("tr", {},
+          td(symLink(p.symbol)), td(num(p.shares), "num"), td(inr(p.buy_price, 2), "num"), td(inr(p.close, 2), "num"),
+          td(inr(p.value), "num"), td(pct(p.gain_pct), "num " + tone(p.gain_pct)), td(day(p.bought_on), "small"), td(p.in_real ? "yes" : "", "small")))
+          : h("tr", {}, h("td", {colspan: 8, class: "muted"}, "No holdings yet."))))),
+      e.fills.length ? h("details", {}, h("summary", {}, `Trades (${e.trades})`), h("div", {class: "scroll"}, h("table", {class: "small"},
+        h("thead", {}, h("tr", {}, ["Date", "Stock", "Side"].map(x => h("th", {}, x)), ["Shares", "Open", "Amount", "Charges"].map(x => h("th", {class: "num"}, x)), h("th", {}, "Why"))),
+        h("tbody", {}, e.fills.map(f => h("tr", {}, td(day(f.date)), td(f.symbol), td(f.side), td(num(f.shares), "num"),
+          td(inr(f.price, 2), "num"), td(inr(f.value), "num"), td(inr(f.charges, 2), "num"), td(f.reason === "stop" ? "25% stop" : "decision"))))))) : null));
+  }
+  const colors = [css("--up"), "#d08a1d", "#8e6bd6", "#d0567a", "#2aa198"];
+  return [out, () => {
+    if (d.chart.length > 1) lineChart(box.firstChild, d.chart.map(r => r.date),
+      [{label: "Your real portfolio", data: d.chart.map(r => r.real), borderColor: css("--fg")}]
+        .concat(d.items.map((e, i) => ({label: e.name, data: d.chart.map(r => r[e.key]), borderColor: colors[i % colors.length]})))
+        .concat([{label: "NIFTY 50", data: d.chart.map(r => r.nifty), borderColor: css("--accent"), borderWidth: 1.5, borderDash: [4, 3]}]));
+  }];
+}
+
+// ---------------------------------------------------------------- Research
+let runShown = null;
+async function research() {
+  const R = await load("research");
+  const runs = R.runs || [];
+  if (!runs.length) return [[card(empty("No backtest saved yet."))]];
+  const run = runs.find(r => r.id === runShown) || runs[0];
+  const s = run.summary || {}, rr = run.rules || {};
+  const box = h("div", {class: "chart tall"}, h("canvas", {"aria-label": "Backtest value against NIFTY 50 and all screened stocks"}));
+  const by = {nse: "NSE-style score (6- and 12-month rise ÷ volatility)", "6m": "6-month rise", "12-1m": "12-month rise, skipping the last month"};
+  const list = h("div", {class: "stack runs"}, runs.map(r => h("button", {"aria-pressed": r.id === run.id ? "true" : "false", onclick: () => { runShown = r.id; route(); }},
+    h("b", {}, `#${r.id} `), `top ${r.rules.holdings}/${r.rules.keep_rank} ${r.rules.lookback} ${r.rules.rebalance === "month_end" ? "month end" : r.rules.rebalance} `,
+    h("span", {class: "num"}, (r.summary.periods || []).map((x, i) => [i ? " · " : "", h("span", {class: tone(x.return_pct)}, pct(x.return_pct, 0))])))));
+  const out = [
+    h("div", {}, h("h1", {}, "Research: the strategy tested on 2010–2026"),
+      h("p", {class: "sub"}, `Each backtest runs the same code as the live paper portfolio over NSE's history (stocks that later left the market included), with all charges, ${(R.costs.slippage * 100).toFixed(1)}% slippage each way and ${inr(R.costs.dp_per_sell, 2)} per sale. It is compared with NIFTY 50 and with buying every screened stock in equal amounts.`)),
+    h("div", {class: "grid two"},
+      h("div", {class: "stack"},
+        card(h("h2", {}, `Run ${run.id}: top ${rr.holdings} by ${by[rr.lookback] || rr.lookback}, sell below rank ${rr.keep_rank}, ${rr.rebalance === "month_end" ? "each month end" : rr.rebalance}`),
+          h("p", {class: "small muted"}, `${day(run.start)} to ${day(run.end)} · made ${run.created_at}. Log scale, each line = 100 at the start.`), box),
+        card(h("div", {class: "scroll"}, h("table", {},
+          h("thead", {}, h("tr", {}, h("th", {}, "Period"), ["Strategy /yr", "NIFTY /yr", "All screened /yr", "Worst fall", "NIFTY worst", "t vs all screened"].map(x => h("th", {class: "num"}, x)))),
+          h("tbody", {}, (s.periods || []).map(p => h("tr", {}, td(`${day(p.from)} – ${day(p.to)}`, "small"),
+            td(h("b", {}, pct(p.return_pct)), "num " + tone(p.return_pct)), td(pct(p.nifty_pct), "num " + tone(p.nifty_pct)),
+            td(pct(p.all_screened_pct), "num " + tone(p.all_screened_pct)), td(pct(p.worst_fall_pct, 0, false), "num " + tone(p.worst_fall_pct, 0)),
+            td(pct(p.nifty_worst_fall_pct, 0, false), "num " + tone(p.nifty_worst_fall_pct, 0)), td(num(p.t_vs_all_screened, 1), "num")))))),
+          h("p", {class: "small muted"}, `Costs ${num(s.costs_per_year_pct || 0, 1)}% of the portfolio a year · ${s.rebalances} decisions · ${s.fills} trades. A t above 2 is unlikely to be luck.`)),
+        s.years ? card(h("h2", {}, "Year by year"), h("div", {class: "scroll"}, h("table", {class: "small"}, h("tbody", {},
+          h("tr", {}, h("th", {}, "Year"), s.years.map(y => td(y[0], "num"))),
+          h("tr", {}, h("th", {}, "Strategy"), s.years.map(y => td(pct(y[1], 0), "num " + tone(y[1], 0)))),
+          h("tr", {}, h("th", {}, "NIFTY"), s.years.map(y => td(pct(y[2], 0), "num " + tone(y[2], 0)))))))) : null),
+      card(h("h2", {}, "Saved runs"), list,
+        h("p", {class: "small muted", style: "margin-top:10px"}, "These backtests were run on the full 2010–2026 history. This page shows them; a new backtest can be asked for in a Claude chat.")))];
+  return [out, () => {
+    const ser = R.series[String(run.id)] || [];
+    if (ser.length > 1) lineChart(box.firstChild, ser.map(r => r.date), [
+      {label: "Strategy", data: ser.map(r => r.value), borderColor: css("--up")},
+      {label: "NIFTY 50", data: ser.map(r => r.nifty), borderColor: css("--accent"), borderWidth: 1.5},
+      {label: "All screened", data: ser.map(r => r.all_screened), borderColor: css("--muted"), borderWidth: 1, borderDash: [4, 3]}], {log: true});
+  }];
+}
+
+// ---------------------------------------------------------------- one stock
+async function stock(symbol) {
+  const d = (details || {})[symbol];
+  if (!d) return [[card(empty(`No page for ${symbol}: stock pages are made for holdings, the top of the ranking and the experiments' holdings.`))]];
+  const r = d.rank;
+  const box = h("div", {class: "chart"}, h("canvas", {"aria-label": `${symbol} against NIFTY 50 over the last year`}));
+  const out = [
+    h("div", {}, h("a", {href: "#stocks", class: "small"}, "← Stocks"), h("h1", {}, symbol, " ", h("span", {class: "muted", style: "font-size:14px;font-weight:400"}, d.name || "")),
+      h("p", {class: "small"}, r && r.rank ? [`Rank ${r.rank} of the screened stocks`, r.score != null ? ` · score ${num(r.score)}` : "",
+        " · 6 months ", h("span", {class: tone(r.ret_6m)}, pct(r.ret_6m)), " · 1 month ", h("span", {class: tone(r.ret_1m)}, pct(r.ret_1m))]
+        : r ? "Not ranked (not on today's screen)" : "Not on today's screen",
+        d.held ? [" · ", h("span", {class: "chip held"}, "held"), ` since ${day(d.held.opened_on)}, cost ${inr(d.held.cost)}`] : null)),
+    card(h("h2", {}, "Last year, adjusted for splits and bonuses (each = 100 at the start)"), box),
+    h("div", {class: "grid two"},
+      card(h("h2", {}, "In the news (Google News, 14 days) ", h("span", {class: "chip good"}, `${d.media.count.good} good`), h("span", {class: "chip bad"}, `${d.media.count.bad} bad`), h("span", {class: "chip"}, `${d.media.count.neutral} neutral`)),
+        h("div", {class: "scroll"}, h("table", {class: "small"}, h("tbody", {}, d.media.rows.length ? d.media.rows.map(n => h("tr", {},
+          td(String(n.at).slice(0, 10), "mono muted"), td(h("span", {class: "chip " + ({good: "good", bad: "bad"}[n.sentiment] || "")}, n.sentiment)),
+          td([n.link ? h("a", {href: n.link, target: "_blank", rel: "noopener"}, n.title) : n.title, h("span", {class: "muted"}, ` - ${n.source || ""}`)])))
+          : h("tr", {}, td("Headlines are read for the stocks you hold.", "muted")))))),
+      card(h("h2", {}, "NSE filings (30 days)"), h("div", {class: "scroll"}, h("table", {class: "small"}, h("tbody", {}, d.filings.length ? d.filings.map(n => h("tr", {class: n.flag ? "flag" : null},
+        td(String(n.at).slice(0, 10), "mono muted"),
+        td([n.flag ? [h("span", {class: "chip bad"}, n.flag), " "] : null, n.subject, n.link ? [" ", h("a", {href: n.link, target: "_blank", rel: "noopener"}, "filing")] : null])))
+        : h("tr", {}, td("None read (filings are read for the stocks you hold).", "muted"))))))),
+    h("div", {class: "grid two"},
+      card(h("h2", {}, "Portfolio trades"), h("div", {class: "scroll"}, h("table", {class: "small"},
+        h("thead", {}, h("tr", {}, h("th", {}, "Date"), h("th", {}, "Side"), ["Shares", "Price", "Amount"].map(x => h("th", {class: "num"}, x)))),
+        h("tbody", {}, d.fills.length ? d.fills.map(f => h("tr", {}, td(day(f.date)), td(h("span", {class: "chip " + (f.side === "BUY" ? "buy" : "sell")}, f.side)),
+          td(num(f.shares), "num"), td(inr(f.price, 2), "num"), td(inr(f.value), "num"))) : h("tr", {}, td("None.", "muted")))))),
+      card(h("h2", {}, "Corporate actions (NSE)"), h("div", {class: "scroll"}, h("table", {class: "small"}, h("tbody", {},
+        d.actions.length ? d.actions.map(a => h("tr", {}, td(day(a.ex_date)), td(a.kind), td(a.subject || "", "muted"))) : h("tr", {}, td("None recorded.", "muted")))))))];
+  return [out, () => {
+    if (d.series.length > 1) lineChart(box.firstChild, d.series.map(x => x.date), [
+      {label: symbol, data: norm(d.series, "close"), borderColor: css("--up")},
+      {label: "NIFTY 50", data: norm(d.series, "nifty"), borderColor: css("--accent"), borderWidth: 1.5}], {log: true});
+  }];
+}
+
+// ---------------------------------------------------------------- router
+const PAGES = {today, stocks, portfolio, experiments, research};
+let seq = 0;
+async function route() {
+  const my = ++seq;
+  let name = (location.hash || "#today").slice(1);
+  const isStock = name.startsWith("stock-");
+  if (!isStock && !PAGES[name]) name = "today";
+  document.querySelectorAll("#tabs a").forEach(a => a.setAttribute("aria-current", a.getAttribute("href") === "#" + (isStock ? "stocks" : name) ? "page" : "false"));
+  try {
+    if (!details) details = await load("stocks_detail").catch(() => ({}));
+    const [nodes, after] = isStock ? await stock(unslug(name)) : await PAGES[name]();
+    if (my !== seq) return;
+    charts.forEach(c => c.destroy()); charts = [];
+    $main.replaceChildren(h("div", {class: "stack"}, nodes));
+    if (after) after();
+  } catch (e) {
+    if (my !== seq) return;
+    $main.replaceChildren(h("div", {class: "alert bad"}, "This page's data could not be read: ", String(e.message || e),
+      ". The evening update may not have run yet."));
+  }
+}
+async function status() {
+  try {
+    const s = await load("status");
+    const bad = (s.log || []).some(l => /status: error/.test(l));
+    document.getElementById("status").replaceChildren(...[
+      bad ? h("span", {class: "chip bad"}, "last update failed") : null, bad ? " " : null,
+      `Prices to ${day(s.prices_to)} · updated ${s.ran_at} IST`].filter(x => x != null));
+  } catch { document.getElementById("status").textContent = "Not updated yet"; }
+}
+window.addEventListener("hashchange", () => { route(); window.scrollTo(0, 0); });
+status();
+route();
+</script>
+
+</body></html>
+</body></html>
