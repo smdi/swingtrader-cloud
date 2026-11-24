@@ -279,8 +279,24 @@ MARKET_AVERAGE_SESSIONS = 200    # NIFTY below its 200-day average: the market i
 
 
 def _inr(value, digits=0):
-    from web.routes import inr                    # the pages' own rupee format (Indian grouping)
+    try:
+        from web.routes import inr                # the pages' own rupee format (Indian grouping)
+    except ImportError:                           # the cloud copy has no web.routes (no Flask pages)
+        inr = _inr_plain
     return inr(value, digits)
+
+
+def _inr_plain(value, digits=0) -> str:
+    """₹ with Indian grouping (₹1,23,456.78), as the pages show it."""
+    if value is None or value != value:
+        return "–"
+    text = f"{abs(float(value)):.{digits}f}"
+    whole, _, frac = text.partition(".")
+    if len(whole) > 3:
+        head, tail = whole[:-3], whole[-3:]
+        head = ",".join([head[max(0, i - 2):i] for i in range(len(head), 0, -2)][::-1])
+        whole = f"{head},{tail}"
+    return ("-" if float(value) < 0 and float(text) != 0 else "") + "₹" + whole + (f".{frac}" if frac else "")
 
 
 def risk_alerts(conn, pos: dict) -> dict:
